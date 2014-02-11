@@ -1,0 +1,70 @@
+drop table Hive_recalc;
+
+drop table stockprice_raw;
+
+sudo -u hdfs hadoop fs -rm -r /user/hive/warehouse/Hive_recalc
+
+sudo -u hdfs hadoop fs -rm -r /user/hive/warehouse/stockprice_raw
+
+sudo -u hdfs hadoop fs -rm -r /user/hive/warehouse/options1_raw
+
+sudo -u hdfs sqoop import --connect "jdbc:sqlserver://192.168.22.85:1433;database=IV;username=scoop;password=pobeda" --table Hive_recalc --target-dir /user/hive/warehouse/Hive_recalc/ --as-textfile
+
+sudo -u hdfs sqoop import --connect "jdbc:sqlserver://192.168.22.85:1433;database=IV;username=scoop;password=pobeda" --table stockprice_raw --target-dir /user/hive/warehouse/stockprice_raw/ --as-textfile
+
+sudo -u hdfs sqoop import --connect "jdbc:sqlserver://192.168.22.85:1433;database=IV;username=scoop;password=pobeda" --table options_raw --target-dir /user/hive/warehouse/options1_raw/ --as-textfile
+
+sudo -u hdfs hive
+
+Create table Hive_recalc(
+t_date string,
+stock_id int,
+region_id int,
+div_date TIMESTAMP,
+amount float,
+frequency int,
+yield float,
+type string,
+style string,
+currency string
+)
+row format delimited 
+fields terminated by ',' lines terminated by "\n"
+LOCATION '/user/hive/warehouse/Hive_recalc';
+
+select iv.stock_id,iv.dt,iv.stock_symbol,iv.period,iv.ivx_call,iv.ivx_put
+from hive_recalc h join iv_index_rcf iv on h.stock_id=iv.stock_id and h.t_date=iv.dt
+where iv.stock_id in (9327,627,9322,9326,18555,7650);
+
+select iv.stock_id,iv.dt,iv.stock_symbol,iv.period,iv.ivx_call,iv.ivx_put
+from hive_recalc h join iv_index_rcf iv on h.stock_id=iv.stock_id where iv.dt='2013-06-05'; and h.t_date=iv.dt
+where iv.dt='2013-06-05';
+
+select iv.stock_id,iv.dt,iv.stock_symbol,iv.expiration_date,iv.strike,iv.call_put,iv.iv
+from hive_recalc h join options_rcf iv on h.stock_id=iv.stock_id where iv.dt='2013-06-05' and iv.stock_id in(9327,627,9322,9326,18555,7650);
+
+select iv.stock_id,iv.dt,iv.stock_symbol,iv.expiration_date,iv.strike,iv.call_put,iv.iv
+from options_rcf iv where iv.dt='2013-06-05' and iv.stock_id in(9327,627,9322,9326,18555,7650);
+
+
+select /*+ MAPJOIN(h) */ iv.stock_id,iv.dt,iv.stock_symbol,iv.period,iv.ivx_call,iv.ivx_put
+from hive_recalc h join iv_index_rcf iv on h.stock_id=iv.stock_id and h.t_date=iv.dt
+where iv.stock_id in (9327,627,9322,9326,18555);
+
+select iv.stock_id,iv.dt,iv.symbol,iv.currency,iv.volume
+from hive_recalc h join stockprice_raw iv on h.stock_id=iv.stock_id where iv.dt='20130103'; 
+
+select iv.stock_id,iv.dt,iv.symbol,iv.expiration_date,iv.strike,iv.call_put,iv.iv,iv.volume
+from hive_recalc h join options_raw iv on h.stock_id=iv.stock_id where iv.dt='20130102'; 
+
+! ls /tmp/mec/;
+
+select iv.stock_id,iv.dt,s.symbol,s.t_date,s.term_date from stocksymbol s join iv_index_rcf iv on s.stock_id=iv.stock_id where iv.dt='2013-08-30' and iv.stock_id=9327;
+
+INSERT OVERWRITE Local DIRECTORY '/opt/spin/new'
+select * from hive_recalc;
+
+INSERT OVERWRITE LOCAL DIRECTORY '/tmp/her' 
+ROW FORMAT DELIMITED 
+FIELDS TERMINATED BY ',' 
+select * from hive_recalc;
