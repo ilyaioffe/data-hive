@@ -1,0 +1,11 @@
+sudo -u hdfs hadoop fs -rm -r /user/hive/warehouse/Hive_recalc
+
+sudo -u hdfs hadoop fs -rm -r /user/hive/warehouse/stockprice_raw
+
+sudo -u hdfs hadoop fs -rm -r /user/hive/warehouse/options_raw
+
+sudo -u hdfs sqoop import --connect "jdbc:sqlserver://192.168.22.85:1433;database=IV;username=scoop;password=pobeda" --table Hive_recalc --target-dir /user/hive/warehouse/Hive_recalc/ --as-textfile
+
+sudo -u hdfs sqoop import --connect "jdbc:sqlserver://192.168.22.85:1433;database=IV;username=scoop;password=pobeda" --table stockprice_raw --target-dir /user/hive/warehouse/stockprice_raw/ --as-textfile
+
+sudo -u hdfs sqoop import --connect "jdbc:sqlserver://192.168.22.85:1433;database=IV;username=scoop;password=pobeda" --table options_raw --target-dir /user/hive/warehouse/options_raw/ --as-textfile
